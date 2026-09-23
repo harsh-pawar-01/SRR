@@ -1,17 +1,37 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, ArrowLeft, Lock, Mail, UserCheck } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { GraduationCap, ArrowLeft, Lock, User, ShieldCheck } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [role, setRole] = useState('student');
-  const [email, setEmail] = useState('');
+  const [selectedRole, setSelectedRole] = useState('student');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = (e) => {
     e.preventDefault();
-    // Route to the respective dashboard based on selected role
-    navigate(`/${role}`);
+    // Route based on selected role
+    if (selectedRole === 'student') {
+      navigate('/student');
+    } else if (selectedRole === 'teacher') {
+      // Automatically detect subject teacher based on username keywords
+      const lowerUser = username.toLowerCase();
+      if (lowerUser.includes('chem')) {
+        navigate('/teacher/chemistry');
+      } else if (lowerUser.includes('math')) {
+        navigate('/teacher/mathematics');
+      } else if (lowerUser.includes('bio')) {
+        navigate('/teacher/biology');
+      } else if (lowerUser.includes('phy') || lowerUser.includes('rc')) {
+        navigate('/teacher/physics');
+      } else {
+        navigate('/teacher/physics'); // Default fallback
+      }
+    } else if (selectedRole === 'receptionist') {
+      navigate('/receptionist');
+    } else if (selectedRole === 'admin') {
+      navigate('/admin');
+    }
   };
 
   return (
@@ -24,9 +44,9 @@ export default function Login() {
           </div>
           <div>
             <span className="text-xl font-extrabold tracking-tight text-slate-900 block leading-none">
-              SRR <span className="text-emerald-600">PORTAL</span>
+              SRR
             </span>
-            <span className="text-[10px] tracking-widest uppercase font-semibold text-slate-500">VITA • LOGIN DESK</span>
+            <span className="text-[10px] tracking-widest uppercase font-semibold text-emerald-600">JEE • NEET • CET</span>
           </div>
         </div>
         <div>
@@ -39,87 +59,87 @@ export default function Login() {
         </div>
       </nav>
 
-      {/* Login Card Container */}
+      {/* Login Form Container */}
       <main className="max-w-md w-full mx-auto px-6 py-12">
-        <div className="text-center mb-8">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            Secure Portal Access
-          </span>
-          <h1 className="text-3xl font-extrabold text-slate-900 mt-3">Welcome Back</h1>
-          <p className="text-slate-600 text-sm mt-1">Select your role and sign in to access your portal</p>
-        </div>
+        <div className="bg-white border border-emerald-100 rounded-3xl p-8 shadow-sm space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-black text-slate-900">Portal Login</h1>
+            <p className="text-xs text-slate-500">Select your role and enter credentials to access your portal</p>
+          </div>
 
-        <form onSubmit={handleLogin} className="bg-white border border-emerald-100 rounded-3xl p-8 shadow-sm space-y-6">
           {/* Role Selector Tabs */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <UserCheck className="w-3.5 h-3.5 text-emerald-600" /> Select Portal Role *
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'student', label: 'Student' },
-                { id: 'teacher', label: 'Teacher' },
-                { id: 'receptionist', label: 'Reception' },
-                { id: 'admin', label: 'Admin' },
-              ].map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  onClick={() => setRole(item.id)}
-                  className={`py-2.5 px-4 text-xs font-bold rounded-xl transition cursor-pointer border ${
-                    role === item.id
-                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  {item.label} Portal
-                </button>
-              ))}
+          <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => setSelectedRole('student')}
+              className={`py-2 rounded-xl transition cursor-pointer ${selectedRole === 'student' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-emerald-700'}`}
+            >
+              Student
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('teacher')}
+              className={`py-2 rounded-xl transition cursor-pointer ${selectedRole === 'teacher' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-emerald-700'}`}
+            >
+              Teacher
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('receptionist')}
+              className={`py-2 rounded-xl transition cursor-pointer ${selectedRole === 'receptionist' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-emerald-700'}`}
+            >
+              Receptionist
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedRole('admin')}
+              className={`py-2 rounded-xl transition cursor-pointer ${selectedRole === 'admin' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-emerald-700'}`}
+            >
+              Admin
+            </button>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1">
+                <User className="w-3.5 h-3.5 text-emerald-600" /> Username / ID
+              </label>
+              <input
+                type="text"
+                required
+                placeholder={selectedRole === 'teacher' ? "e.g. physics_rc, chem_sandeep, math_vijay, bio_anjali" : "e.g. student_srr"}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 transition"
+              />
             </div>
-          </div>
 
-          {/* Email / Username Input */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-emerald-600" /> Email ID / Username *
-            </label>
-            <input
-              type="email"
-              required
-              placeholder="e.g. user@srra.edu.in"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 transition"
-            />
-          </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1">
+                <Lock className="w-3.5 h-3.5 text-emerald-600" /> Password
+              </label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 transition"
+              />
+            </div>
 
-          {/* Password Input */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase text-slate-700 flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-emerald-600" /> Password *
-            </label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 transition"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 cursor-pointer"
-          >
-            Sign In to {role.charAt(0).toUpperCase() + role.slice(1)} Dashboard &rarr;
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition shadow-lg shadow-emerald-600/20 text-sm cursor-pointer mt-2"
+            >
+              Login to {selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Portal &rarr;
+            </button>
+          </form>
+        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="text-center py-6 text-xs text-slate-500 border-t border-slate-200">
-        &copy; {new Date().getFullYear()} Shri Rajlaxmi Royal Academy of Vita. All rights reserved.
+      <footer className="text-center py-6 text-xs text-slate-400">
+        &copy; Shri Rajlaxmi Royal Academy Vita. Secure Portal Access.
       </footer>
     </div>
   );
