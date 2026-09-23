@@ -10,6 +10,8 @@ import HallOfFame from './pages/public/HallOfFame';
 // Dashboards
 import StudentDashboard from './pages/student/StudentDashboard';
 import TeacherDashboard from './pages/teacher/TeacherDashboard';
+import ReceptionDashboard from './pages/receptionist/ReceptionDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard'; // <-- ENSURE IMPORT IS HERE
 
 export default function App() {
   return (
@@ -23,7 +25,10 @@ export default function App() {
 
         {/* Portal Dashboards */}
         <Route path="/student" element={<StudentDashboard />} />
-        
+        <Route path="/receptionist" element={<ReceptionDashboard />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+
         {/* Subject-Specific Teacher Portals */}
         <Route path="/teacher/physics" element={<TeacherDashboard fixedSubject="Physics" facultyName="Prof. R. C. Patil (RC Sir)" />} />
         <Route path="/teacher/chemistry" element={<TeacherDashboard fixedSubject="Chemistry" facultyName="Dr. Sandeep Kulkarni" />} />
