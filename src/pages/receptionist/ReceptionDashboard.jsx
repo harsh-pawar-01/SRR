@@ -4,16 +4,19 @@ import {
   GraduationCap, LogOut, UserPlus, CalendarCheck, 
   Award, MessageSquare, ArrowRightLeft, Send, 
   Search, Phone, MapPin, Building, CheckCircle2, 
-  ShieldCheck, Clock, Check
+  ShieldCheck, Clock, Check, Save, UserX, Archive, Trash2, Filter
 } from 'lucide-react';
 
 export default function ReceptionDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('admission');
 
+  // Search & Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [exitFilterGrade, setExitFilterGrade] = useState('All'); // 'All', '11th', '12th'
 
+  // Initial Student State
   const [students, setStudents] = useState([
     {
       id: '1',
@@ -26,6 +29,7 @@ export default function ReceptionDashboard() {
       classGrade: '12th',
       username: 'rohan.joshi',
       attendance: 'Present',
+      lastAttendanceSaved: 'Oct 24, 2026',
       marks: [
         { testName: 'Weekly Test #1', subject: 'Physics', scored: 78, total: 100 }
       ]
@@ -41,6 +45,7 @@ export default function ReceptionDashboard() {
       classGrade: '11th',
       username: 'snehal.more',
       attendance: 'Absent',
+      lastAttendanceSaved: 'Oct 24, 2026',
       marks: [
         { testName: 'Weekly Test #1', subject: 'Physics', scored: 84, total: 100 }
       ]
@@ -56,13 +61,29 @@ export default function ReceptionDashboard() {
       classGrade: '12th',
       username: 'atharva.patil',
       attendance: 'Present',
+      lastAttendanceSaved: 'Oct 24, 2026',
       marks: [
         { testName: 'JEE Mock Exam #4', subject: 'Physics', scored: 88, total: 100 }
       ]
+    },
+    {
+      id: '4',
+      name: 'Pratik Ramesh Shinde',
+      mobileNo: '9822556677',
+      parentName: 'Ramesh Shinde',
+      parentMobNo: '919822556677',
+      address: 'Tasgaon Naka, Vita',
+      collegeName: 'Balwant College, Vita',
+      classGrade: '11th',
+      username: 'pratik.shinde',
+      attendance: 'Absent',
+      lastAttendanceSaved: 'Oct 24, 2026',
+      marks: []
     }
   ]);
 
-  const [consultations] = useState([
+  // Consultation Leads State
+  const [consultations, setConsultations] = useState([
     {
       id: 'c1',
       studentName: 'Pranav Deshmukh',
@@ -73,7 +94,8 @@ export default function ReceptionDashboard() {
       email: 'pranav.deshmukh@gmail.com',
       address: 'Station Road, Vita',
       message: 'Inquiring about hostel availability and morning batch timings.',
-      date: 'Today, 10:30 AM'
+      date: 'Today, 10:30 AM',
+      status: 'Pending'
     },
     {
       id: 'c2',
@@ -85,10 +107,12 @@ export default function ReceptionDashboard() {
       email: 'aditi.k@yahoo.com',
       address: 'Tasgaon Naka, Vita',
       message: 'Direct admission inquiry for repeater/crash course.',
-      date: 'Yesterday, 04:15 PM'
+      date: 'Yesterday, 04:15 PM',
+      status: 'Followed Up'
     }
   ]);
 
+  // Admission Form State
   const [admissionForm, setAdmissionForm] = useState({
     name: '',
     mobileNo: '',
@@ -101,19 +125,21 @@ export default function ReceptionDashboard() {
     password: ''
   });
 
+  // Global Test Config for Batch-wise Mark Entry
   const [examConfig, setExamConfig] = useState({
     testName: 'Weekly Unit Test #01',
     subject: 'Physics',
     totalMarks: '100'
   });
 
-  const [currentScores, setCurrentScores] = useState({});
+  // Score Inputs for All Students (Keyed by Student ID)
+  const [batchScores, setBatchScores] = useState({});
 
-  // Redirects directly back to the Receptionist login page
   const handleLogout = () => {
     navigate('/login?role=receptionist');
   };
 
+  // 1. Handle New Admission
   const handleAdmissionSubmit = (e) => {
     e.preventDefault();
     if (!admissionForm.name || !admissionForm.username || !admissionForm.password) {
@@ -125,6 +151,7 @@ export default function ReceptionDashboard() {
       id: Date.now().toString(),
       ...admissionForm,
       attendance: 'Present',
+      lastAttendanceSaved: attendanceDate,
       marks: []
     };
 
@@ -144,35 +171,68 @@ export default function ReceptionDashboard() {
     });
   };
 
-  const sendWhatsAppAbsentAlert = (student) => {
-    const message = encodeURIComponent(
-      `*Shri Rajlaxmi Royal Academy of Science, Vita (SRR)*\n\n` +
-      `Namaskar ${student.parentName},\n` +
-      `This is to notify you that your ward *${student.name}* (Class: ${student.classGrade}) was marked *ABSENT* for lectures today (${attendanceDate}).\n\n` +
-      `Please contact the academy reception for details.\n` +
-      `Office: +91 98220 12345 / +91 94230 56789`
+  // ==========================================
+  // BULK SEND: WHATSAPP ABSENT ALERTS FOR ALL
+  // ==========================================
+  const handleSendAllAbsentWhatsAppAlerts = () => {
+    const absentStudents = students.filter(s => s.attendance === 'Absent');
+    
+    if (absentStudents.length === 0) {
+      alert('Great news! No students are marked absent for today.');
+      return;
+    }
+
+    const confirmSend = window.confirm(
+      `Found ${absentStudents.length} absent student(s):\n` +
+      absentStudents.map(s => `• ${s.name} (${s.classGrade}) - Parent: ${s.parentMobNo}`).join('\n') +
+      `\n\nDo you want to dispatch WhatsApp alerts to their parents now?`
     );
 
-    const phone = student.parentMobNo.replace(/[^0-9]/g, '');
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    if (!confirmSend) return;
+
+    // Send WhatsApp messages sequentially
+    absentStudents.forEach((student, index) => {
+      setTimeout(() => {
+        const message = encodeURIComponent(
+          `*Shri Rajlaxmi Royal Academy of Science, Vita (SRR)*\n\n` +
+          `Namaskar ${student.parentName},\n` +
+          `This is to inform you that your ward *${student.name}* (${student.classGrade} Standard) was marked *ABSENT* for lectures today (${attendanceDate}).\n\n` +
+          `Please contact reception for academic assistance or leave records.\n` +
+          `Office: +91 98220 12345 / +91 94230 56789`
+        );
+        const phone = student.parentMobNo.replace(/[^0-9]/g, '');
+        window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+      }, index * 600);
+    });
   };
 
-  const handleSaveMarksForRow = (studentId) => {
-    const scoredVal = currentScores[studentId];
-    if (scoredVal === undefined || scoredVal === '') {
-      alert('Please enter marks scored before saving.');
+  // BULK SAVE: ALL ATTENDANCE
+  const handleSaveAllAttendance = () => {
+    setStudents(prev => prev.map(s => ({
+      ...s,
+      lastAttendanceSaved: attendanceDate
+    })));
+    alert(`All attendance records saved successfully for date: ${attendanceDate}!`);
+  };
+
+  // BULK SAVE: ALL ENTERED MARKS
+  const handleSaveAllMarks = () => {
+    const enteredIds = Object.keys(batchScores).filter(id => batchScores[id] !== '');
+    if (enteredIds.length === 0) {
+      alert('Please enter marks for at least one student before saving.');
       return;
     }
 
     setStudents(prev => prev.map(s => {
-      if (s.id === studentId) {
+      const score = batchScores[s.id];
+      if (score !== undefined && score !== '') {
         return {
           ...s,
           marks: [
             {
               testName: examConfig.testName,
               subject: examConfig.subject,
-              scored: Number(scoredVal),
+              scored: Number(score),
               total: Number(examConfig.totalMarks)
             },
             ...s.marks
@@ -182,9 +242,11 @@ export default function ReceptionDashboard() {
       return s;
     }));
 
-    alert(`Marks recorded successfully!`);
+    alert(`Marks for ${enteredIds.length} student(s) saved successfully for ${examConfig.testName}!`);
+    setBatchScores({});
   };
 
+  // 4. Handle 11th to 12th Standard Promotion/Swap
   const handleBulkSwap11to12 = () => {
     const count11th = students.filter(s => s.classGrade === '11th').length;
     if (count11th === 0) {
@@ -202,11 +264,44 @@ export default function ReceptionDashboard() {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, classGrade: s.classGrade === '11th' ? '12th' : '11th' } : s));
   };
 
+  // 5. STUDENT EXIT & REMOVAL HANDLERS (11th or 12th middle exit + Passed 12th Batch)
+  const handleRemoveIndividualStudent = (id, name, classGrade) => {
+    if (window.confirm(`Are you sure you want to exit and remove ${classGrade} student "${name}" from the active academy database? This action cannot be undone.`)) {
+      setStudents(prev => prev.filter(s => s.id !== id));
+      alert(`Student ${name} (${classGrade}) has been removed from active records.`);
+    }
+  };
+
+  const handleRemoveBulkPassed12thBatch = () => {
+    const count12th = students.filter(s => s.classGrade === '12th').length;
+    if (count12th === 0) {
+      alert('No 12th standard students found to remove.');
+      return;
+    }
+
+    if (window.confirm(`WARNING: Are you sure you want to archive and remove ALL (${count12th}) completed 12th standard students from the active database? This will clear the passed batch.`)) {
+      setStudents(prev => prev.filter(s => s.classGrade !== '12th'));
+      alert(`Successfully archived and removed all ${count12th} completed 12th standard students!`);
+    }
+  };
+
+  // Filtered Student List for general tabs
   const filteredStudents = students.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.collegeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.classGrade.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Filtered Student List for Exit tab (handles grade filter + search)
+  const exitFilteredStudents = students.filter(s => {
+    const matchesGrade = exitFilterGrade === 'All' || s.classGrade === exitFilterGrade;
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.collegeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          s.username.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesGrade && matchesSearch;
+  });
+
+  const totalAbsentCount = students.filter(s => s.attendance === 'Absent').length;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
@@ -250,12 +345,13 @@ export default function ReceptionDashboard() {
             { id: 'marks', label: 'Update Test Marks', icon: Award },
             { id: 'consultation', label: 'Booked Consultations', icon: MessageSquare },
             { id: 'swap', label: '11th to 12th Swap', icon: ArrowRightLeft },
+            { id: 'exit', label: 'Student Exit & Batch Archive', icon: UserX },
           ].map(tab => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); setSearchTerm(''); }}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer ${
                   activeTab === tab.id 
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' 
@@ -268,7 +364,9 @@ export default function ReceptionDashboard() {
           })}
         </div>
 
-        {/* TAB 1: NEW STUDENT ADMISSION FORM */}
+        {/* ========================================================= */}
+        {/* TAB 1: NEW STUDENT ADMISSION FORM                         */}
+        {/* ========================================================= */}
         {activeTab === 'admission' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div>
@@ -411,7 +509,9 @@ export default function ReceptionDashboard() {
           </div>
         )}
 
-        {/* TAB 2: ATTENDANCE LOG & WHATSAPP ALERT SENDER */}
+        {/* ========================================================= */}
+        {/* TAB 2: ATTENDANCE LOG & BULK ACTIONS ONLY                 */}
+        {/* ========================================================= */}
         {activeTab === 'attendance' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -419,21 +519,46 @@ export default function ReceptionDashboard() {
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                   Daily Attendance Tracker
                 </span>
-                <h2 className="text-2xl font-bold text-slate-900 mt-2">Attendance & WhatsApp Absent Dispatch</h2>
-                <p className="text-slate-600 text-sm">Mark attendance daily. Send instantaneous WhatsApp messages to parents of absent students.</p>
+                <h2 className="text-2xl font-bold text-slate-900 mt-2">Daily Attendance & WhatsApp Absent Dispatch</h2>
+                <p className="text-slate-600 text-sm">Toggle attendance status below, save the entire batch, and send alerts to absent students with one click.</p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <label className="text-xs font-bold text-slate-500">Date:</label>
-                <input
-                  type="date"
-                  value={attendanceDate}
-                  onChange={e => setAttendanceDate(e.target.value)}
-                  className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold bg-slate-50"
-                />
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
+                  <label className="text-xs font-bold text-slate-500">Date:</label>
+                  <input
+                    type="date"
+                    value={attendanceDate}
+                    onChange={e => setAttendanceDate(e.target.value)}
+                    className="border-none text-xs font-bold bg-transparent focus:outline-none"
+                  />
+                </div>
+
+                {/* BULK ACTION 1: SAVE ALL ATTENDANCE */}
+                <button
+                  onClick={handleSaveAllAttendance}
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2 shrink-0"
+                >
+                  <Save className="w-4 h-4" /> Save All Attendance
+                </button>
+
+                {/* BULK ACTION 2: SEND WHATSAPP ALERTS TO ALL ABSENT STUDENTS ONLY */}
+                <button
+                  onClick={handleSendAllAbsentWhatsAppAlerts}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-md cursor-pointer flex items-center gap-2 shrink-0 ${
+                    totalAbsentCount > 0 
+                      ? 'bg-green-600 hover:bg-green-700 text-white animate-pulse' 
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
+                  disabled={totalAbsentCount === 0}
+                  title="Send WhatsApp notice to all absent students' parents"
+                >
+                  <Send className="w-4 h-4" /> Send Absent Alerts ({totalAbsentCount})
+                </button>
               </div>
             </div>
 
+            {/* Quick Search & Summary */}
             <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
               <div className="relative flex-1 max-w-sm">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -447,10 +572,12 @@ export default function ReceptionDashboard() {
               </div>
               <div className="text-xs text-slate-500 font-semibold">
                 Total Enrolled: <span className="text-emerald-700 font-bold">{students.length}</span> | 
-                Absent: <span className="text-rose-600 font-bold">{students.filter(s => s.attendance === 'Absent').length}</span>
+                Present: <span className="text-emerald-600 font-bold">{students.filter(s => s.attendance === 'Present').length}</span> |
+                Absent: <span className="text-rose-600 font-bold">{totalAbsentCount}</span>
               </div>
             </div>
 
+            {/* Student Attendance List (No Individual WhatsApp button) */}
             <div className="space-y-3">
               {filteredStudents.map((student, idx) => (
                 <div 
@@ -466,6 +593,11 @@ export default function ReceptionDashboard() {
                       <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
                         {student.classGrade}
                       </span>
+                      {student.lastAttendanceSaved && (
+                        <span className="text-[10px] text-slate-400">
+                          (Last Saved: {student.lastAttendanceSaved})
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-500 flex items-center gap-3">
                       <span>Parent: {student.parentName}</span>
@@ -477,38 +609,40 @@ export default function ReceptionDashboard() {
                   </div>
 
                   <div className="flex items-center gap-3 self-end sm:self-auto">
+                    {/* Status Selector Toggle */}
                     <div className="flex rounded-xl border border-slate-200 p-1 bg-white">
                       <button
+                        type="button"
                         onClick={() => {
                           setStudents(students.map(s => s.id === student.id ? { ...s, attendance: 'Present' } : s));
                         }}
                         className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                          student.attendance === 'Present' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:text-emerald-600'
+                          student.attendance === 'Present' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-emerald-600'
                         }`}
                       >
                         Present
                       </button>
                       <button
+                        type="button"
                         onClick={() => {
                           setStudents(students.map(s => s.id === student.id ? { ...s, attendance: 'Absent' } : s));
                         }}
                         className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                          student.attendance === 'Absent' ? 'bg-rose-600 text-white' : 'text-slate-600 hover:text-rose-600'
+                          student.attendance === 'Absent' ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-rose-600'
                         }`}
                       >
                         Absent
                       </button>
                     </div>
 
-                    {student.attendance === 'Absent' && (
-                      <button
-                        onClick={() => sendWhatsAppAbsentAlert(student)}
-                        className="flex items-center gap-1.5 px-3.5 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer animate-pulse"
-                        title="Send WhatsApp Absent Notice to Parent"
-                      >
-                        <Send className="w-3.5 h-3.5" /> WhatsApp Parent
-                      </button>
-                    )}
+                    {/* Status indicator tag */}
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                      student.attendance === 'Present' 
+                        ? 'bg-emerald-50 text-emerald-700' 
+                        : 'bg-rose-100 text-rose-700'
+                    }`}>
+                      {student.attendance}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -516,17 +650,30 @@ export default function ReceptionDashboard() {
           </div>
         )}
 
-        {/* TAB 3: UPDATE STUDENT TEST MARKS */}
+        {/* ========================================================= */}
+        {/* TAB 3: UPDATE STUDENT TEST MARKS (SINGLE SAVE ALL AT TOP)  */}
+        {/* ========================================================= */}
         {activeTab === 'marks' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                Academic Score Entry
-              </span>
-              <h2 className="text-2xl font-bold text-slate-900 mt-2">Post-Test Score Updates</h2>
-              <p className="text-slate-600 text-sm">Set the test parameters below, then enter and save marks directly for each student.</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  Academic Score Entry
+                </span>
+                <h2 className="text-2xl font-bold text-slate-900 mt-2">Post-Test Score Updates</h2>
+                <p className="text-slate-600 text-sm">Enter scores for all students below and commit them with "Save All Marks".</p>
+              </div>
+
+              {/* SINGLE SAVE ALL MARKS BUTTON (TOP ONLY) */}
+              <button
+                onClick={handleSaveAllMarks}
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2 self-start sm:self-auto shrink-0"
+              >
+                <Save className="w-4 h-4" /> Save All Marks
+              </button>
             </div>
 
+            {/* Test Configuration Header */}
             <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 uppercase">Test / Exam Name</label>
@@ -566,6 +713,7 @@ export default function ReceptionDashboard() {
               </div>
             </div>
 
+            {/* Search Filter for Student Marks */}
             <div className="relative max-w-sm">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <input
@@ -577,6 +725,7 @@ export default function ReceptionDashboard() {
               />
             </div>
 
+            {/* List of All Students */}
             <div className="space-y-3">
               {filteredStudents.map((student, idx) => (
                 <div 
@@ -592,6 +741,7 @@ export default function ReceptionDashboard() {
                       </span>
                     </div>
                     
+                    {/* Display previously saved marks */}
                     <div className="flex flex-wrap gap-2 pt-0.5">
                       {student.marks.length === 0 ? (
                         <span className="text-[11px] text-slate-400 italic">No previous scores recorded</span>
@@ -605,25 +755,19 @@ export default function ReceptionDashboard() {
                     </div>
                   </div>
 
+                  {/* Input field for this student */}
                   <div className="flex items-center gap-2 self-end sm:self-auto">
                     <div className="flex items-center gap-1.5 bg-white border border-slate-200 px-3 py-1.5 rounded-xl">
                       <span className="text-xs text-slate-500 font-medium">Score:</span>
                       <input
                         type="number"
                         placeholder="0"
-                        value={currentScores[student.id] || ''}
-                        onChange={e => setCurrentScores({ ...currentScores, [student.id]: e.target.value })}
+                        value={batchScores[student.id] ?? ''}
+                        onChange={e => setBatchScores({ ...batchScores, [student.id]: e.target.value })}
                         className="w-16 text-center font-bold text-emerald-700 text-sm focus:outline-none"
                       />
                       <span className="text-xs text-slate-400">/ {examConfig.totalMarks}</span>
                     </div>
-
-                    <button
-                      onClick={() => handleSaveMarksForRow(student.id)}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer flex items-center gap-1"
-                    >
-                      <Check className="w-3.5 h-3.5" /> Save
-                    </button>
                   </div>
                 </div>
               ))}
@@ -631,7 +775,9 @@ export default function ReceptionDashboard() {
           </div>
         )}
 
-        {/* TAB 4: CONSULTATION REQUESTS */}
+        {/* ========================================================= */}
+        {/* TAB 4: CONSULTATION REQUESTS                             */}
+        {/* ========================================================= */}
         {activeTab === 'consultation' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div>
@@ -700,7 +846,9 @@ export default function ReceptionDashboard() {
           </div>
         )}
 
-        {/* TAB 5: 11TH TO 12TH ACADEMIC YEAR SWAP */}
+        {/* ========================================================= */}
+        {/* TAB 5: 11TH TO 12TH ACADEMIC YEAR SWAP                   */}
+        {/* ========================================================= */}
         {activeTab === 'swap' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div>
@@ -713,6 +861,7 @@ export default function ReceptionDashboard() {
               </p>
             </div>
 
+            {/* Bulk Action Notice Card */}
             <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
               <div className="space-y-1">
                 <h3 className="text-lg font-bold">Annual Batch Transition</h3>
@@ -728,6 +877,7 @@ export default function ReceptionDashboard() {
               </button>
             </div>
 
+            {/* Individual Student List */}
             <div className="space-y-3 pt-2">
               <h3 className="text-sm font-bold text-slate-800">Student Directory Status</h3>
               <div className="space-y-2.5">
@@ -755,6 +905,128 @@ export default function ReceptionDashboard() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* TAB 6: STUDENT EXIT & BATCH ARCHIVE (11TH & 12TH MID/END) */}
+        {/* ========================================================= */}
+        {activeTab === 'exit' && (
+          <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
+                  Course Completion & Student Exit
+                </span>
+                <h2 className="text-2xl font-bold text-slate-900 mt-2">Student Exit & Batch Archive Management</h2>
+                <p className="text-slate-600 text-sm">
+                  Remove individual students who leave in the middle of 11th or 12th, or bulk-archive an entire completed 12th standard batch.
+                </p>
+              </div>
+
+              {/* Bulk Remove Entire Passed 12th Batch Button */}
+              <button
+                onClick={handleRemoveBulkPassed12thBatch}
+                className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-2 shrink-0"
+              >
+                <Trash2 className="w-4 h-4" /> Remove Entire Passed 12th Batch ({students.filter(s => s.classGrade === '12th').length})
+              </button>
+            </div>
+
+            {/* Informational Guidance Box */}
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+              <Archive className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-800 space-y-0.5">
+                <p className="font-bold">Total Active Roster: {students.length} students (11th: {students.filter(s => s.classGrade === '11th').length} | 12th: {students.filter(s => s.classGrade === '12th').length})</p>
+                <p>Removing a student completely deregisters their portal login and clears them from daily attendance and test lists.</p>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search student to remove..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Grade Filter Pills */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                  <Filter className="w-3.5 h-3.5" /> Filter:
+                </span>
+                <div className="flex bg-white rounded-xl border border-slate-200 p-1">
+                  {['All', '11th', '12th'].map(grade => (
+                    <button
+                      key={grade}
+                      onClick={() => setExitFilterGrade(grade)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        exitFilterGrade === grade
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-emerald-700'
+                      }`}
+                    >
+                      {grade === 'All' ? 'All Classes' : `${grade} Standard`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* List of Students (11th & 12th) with Exit Option */}
+            <div className="space-y-3 pt-2">
+              <h3 className="text-sm font-bold text-slate-800">
+                Active Enrolled Students ({exitFilteredStudents.length})
+              </h3>
+              
+              {exitFilteredStudents.length === 0 ? (
+                <div className="text-center py-12 bg-slate-50 border border-slate-200 rounded-2xl text-slate-400 text-sm">
+                  No matching students found in this category.
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {exitFilteredStudents.map((student) => (
+                    <div 
+                      key={student.id} 
+                      className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900 text-sm">{student.name}</h4>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            student.classGrade === '12th'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {student.classGrade} Standard
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            (User: {student.username})
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          College: {student.collegeName} • Parent: {student.parentName} ({student.parentMobNo})
+                        </p>
+                      </div>
+
+                      {/* Remove Student Button */}
+                      <button
+                        onClick={() => handleRemoveIndividualStudent(student.id, student.name, student.classGrade)}
+                        className="px-3.5 py-1.5 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 self-end sm:self-auto shadow-2xs"
+                        title="Remove student from academy records"
+                      >
+                        <UserX className="w-3.5 h-3.5" /> Exit / Remove Student
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -4,7 +4,7 @@ import {
   GraduationCap, LogOut, Users, UserPlus, 
   CreditCard, CalendarCheck, CheckCircle2, XCircle, 
   Search, ShieldCheck, DollarSign, Edit3, Key, 
-  Phone, MapPin, Award, Check, Clock
+  Phone, MapPin, Award, Check, Clock, Trash2, Filter, Percent
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -12,7 +12,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. TEACHERS STATE
+  // 1. TEACHERS STATE (With Delete Option)
   const [teachers, setTeachers] = useState([
     {
       id: 't1',
@@ -23,9 +23,7 @@ export default function AdminDashboard() {
       address: 'Shivaji Road, Near Royal Complex, Vita',
       username: 'physics_rc',
       password: 'password123',
-      salary: 75000,
-      salaryStatus: 'Credited',
-      salaryDate: 'Oct 01, 2026'
+      monthlySalary: 75000
     },
     {
       id: 't2',
@@ -36,9 +34,7 @@ export default function AdminDashboard() {
       address: 'Mayani Road, Vita, Dist. Sangli',
       username: 'chem_sandeep',
       password: 'password123',
-      salary: 70000,
-      salaryStatus: 'Pending',
-      salaryDate: 'Due Nov 01, 2026'
+      monthlySalary: 70000
     },
     {
       id: 't3',
@@ -49,9 +45,7 @@ export default function AdminDashboard() {
       address: 'Tasgaon Naka, Vita',
       username: 'math_vijay',
       password: 'password123',
-      salary: 72000,
-      salaryStatus: 'Credited',
-      salaryDate: 'Oct 01, 2026'
+      monthlySalary: 72000
     },
     {
       id: 't4',
@@ -62,19 +56,17 @@ export default function AdminDashboard() {
       address: 'Station Road, Vita',
       username: 'bio_anjali',
       password: 'password123',
-      salary: 75000,
-      salaryStatus: 'Credited',
-      salaryDate: 'Oct 01, 2026'
+      monthlySalary: 75000
     }
   ]);
 
   const [editingTeacherId, setEditingTeacherId] = useState(null);
   const [teacherForm, setTeacherForm] = useState({
     name: '', subject: 'Physics', mobileNo: '', 
-    qualification: '', address: '', username: '', password: '', salary: 65000
+    qualification: '', address: '', username: '', password: '', monthlySalary: 65000
   });
 
-  // 2. RECEPTIONIST CREDENTIALS STATE
+  // 2. RECEPTIONIST STATE (With Delete Option)
   const [receptionists, setReceptionists] = useState([
     {
       id: 'r1',
@@ -83,7 +75,7 @@ export default function AdminDashboard() {
       username: 'reception_srr',
       password: 'reception@2026',
       shift: 'Morning & Afternoon (8 AM - 4 PM)',
-      lastActive: 'Today, 11:20 AM'
+      monthlySalary: 25000
     },
     {
       id: 'r2',
@@ -92,15 +84,16 @@ export default function AdminDashboard() {
       username: 'admin_desk',
       password: 'desk@pass123',
       shift: 'Evening Session (1 PM - 9 PM)',
-      lastActive: 'Yesterday, 08:30 PM'
+      monthlySalary: 22000
     }
   ]);
 
   const [receptionForm, setReceptionForm] = useState({
-    name: '', mobileNo: '', username: '', password: '', shift: 'Full Day'
+    name: '', mobileNo: '', username: '', password: '', shift: 'Full Day', monthlySalary: 22000
   });
 
-  // 3. STUDENT FEE LEDGER STATE
+  // 3. STUDENT FEE STATE (Separate 11th & 12th + Fee Concession / Scholarship)
+  const [feeStandardFilter, setFeeStandardFilter] = useState('All'); // 'All', '11th', '12th'
   const [studentFees, setStudentFees] = useState([
     {
       id: 's1',
@@ -109,6 +102,7 @@ export default function AdminDashboard() {
       classGrade: '12th',
       parentName: 'Ravindra Patil',
       totalFee: 85000,
+      concession: 5000, // Merit concession
       paidAmount: 60000,
       dueDate: 'Nov 15, 2026'
     },
@@ -119,7 +113,8 @@ export default function AdminDashboard() {
       classGrade: '11th',
       parentName: 'Anil More',
       totalFee: 80000,
-      paidAmount: 80000,
+      concession: 10000, // Scholarship concession
+      paidAmount: 70000,
       dueDate: 'Paid in Full'
     },
     {
@@ -129,13 +124,25 @@ export default function AdminDashboard() {
       classGrade: '12th',
       parentName: 'Sunil Joshi',
       totalFee: 75000,
+      concession: 0,
       paidAmount: 35000,
       dueDate: 'Oct 30, 2026'
+    },
+    {
+      id: 's4',
+      name: 'Pratik Ramesh Shinde',
+      rollNo: 'SRR-11TH-042',
+      classGrade: '11th',
+      parentName: 'Ramesh Shinde',
+      totalFee: 80000,
+      concession: 5000,
+      paidAmount: 40000,
+      dueDate: 'Nov 10, 2026'
     }
   ]);
 
   const [feeUpdateModal, setFeeUpdateModal] = useState(null);
-  const [feeInputs, setFeeInputs] = useState({ totalFee: '', paidAmount: '', dueDate: '' });
+  const [feeInputs, setFeeInputs] = useState({ totalFee: '', concession: '', paidAmount: '', dueDate: '' });
 
   // 4. TEACHER LEAVE APPLICATIONS STATE
   const [leaveRequests, setLeaveRequests] = useState([
@@ -159,10 +166,40 @@ export default function AdminDashboard() {
     }
   ]);
 
+  // 5. MONTH-WISE SALARY LEDGER STATE (All 12 Months of Academic Year)
+  const academicMonths = [
+    'June 2026', 'July 2026', 'August 2026', 'September 2026', 
+    'October 2026', 'November 2026', 'December 2026', 'January 2027', 
+    'February 2027', 'March 2027', 'April 2027', 'May 2027'
+  ];
+
+  const [selectedSalaryMonth, setSelectedSalaryMonth] = useState('October 2026');
+  const [salaryRoleFilter, setSalaryRoleFilter] = useState('All'); // 'All', 'Teacher', 'Receptionist'
+
+  // Master Payroll Record mapped dynamically per month
+  const [monthlyPayroll, setMonthlyPayroll] = useState(() => {
+    const initialPayroll = {};
+    academicMonths.forEach((month, idx) => {
+      // Past months (June - September) are marked Credited by default
+      // Current & Future months (October onward) marked with realistic initial status
+      const isPast = idx < 4;
+      initialPayroll[month] = [
+        { id: 't1', name: 'Prof. R. C. Patil', role: 'Teacher', designation: 'Physics HOD', amount: 75000, status: isPast || idx === 4 ? 'Credited' : 'Pending', paidDate: isPast || idx === 4 ? `1st ${month}` : 'Pending cycle' },
+        { id: 't2', name: 'Dr. Sandeep Kulkarni', role: 'Teacher', designation: 'Chemistry HOD', amount: 70000, status: isPast ? 'Credited' : 'Pending', paidDate: isPast ? `1st ${month}` : 'Pending cycle' },
+        { id: 't3', name: 'Prof. Vijay Chavan', role: 'Teacher', designation: 'Mathematics HOD', amount: 72000, status: isPast || idx === 4 ? 'Credited' : 'Pending', paidDate: isPast || idx === 4 ? `1st ${month}` : 'Pending cycle' },
+        { id: 't4', name: 'Dr. Anjali Deshmukh', role: 'Teacher', designation: 'Biology HOD', amount: 75000, status: isPast || idx === 4 ? 'Credited' : 'Pending', paidDate: isPast || idx === 4 ? `1st ${month}` : 'Pending cycle' },
+        { id: 'r1', name: 'Suresh Patil', role: 'Receptionist', designation: 'Front Desk (Shift 1)', amount: 25000, status: isPast || idx === 4 ? 'Credited' : 'Pending', paidDate: isPast || idx === 4 ? `2nd ${month}` : 'Pending cycle' },
+        { id: 'r2', name: 'Mahesh Shinde', role: 'Receptionist', designation: 'Front Desk (Shift 2)', amount: 22000, status: isPast || idx === 4 ? 'Credited' : 'Pending', paidDate: isPast || idx === 4 ? `2nd ${month}` : 'Pending cycle' },
+      ];
+    });
+    return initialPayroll;
+  });
+
   const handleLogout = () => {
     navigate('/login?role=admin');
   };
 
+  // --- Handlers: Teacher Management ---
   const handleSaveTeacher = (e) => {
     e.preventDefault();
     if (editingTeacherId) {
@@ -171,17 +208,15 @@ export default function AdminDashboard() {
       setEditingTeacherId(null);
     } else {
       const newTeacher = {
-        id: Date.now().toString(),
-        ...teacherForm,
-        salaryStatus: 'Pending',
-        salaryDate: 'Due 1st of Month'
+        id: 't_' + Date.now(),
+        ...teacherForm
       };
       setTeachers(prev => [...prev, newTeacher]);
       alert(`Teacher ${teacherForm.name} onboarded successfully!`);
     }
     setTeacherForm({
       name: '', subject: 'Physics', mobileNo: '', 
-      qualification: '', address: '', username: '', password: '', salary: 65000
+      qualification: '', address: '', username: '', password: '', monthlySalary: 65000
     });
   };
 
@@ -195,23 +230,38 @@ export default function AdminDashboard() {
       address: t.address,
       username: t.username,
       password: t.password,
-      salary: t.salary
+      monthlySalary: t.monthlySalary
     });
     setActiveTab('teachers');
   };
 
+  const handleDeleteTeacher = (id, name) => {
+    if (window.confirm(`Are you sure you want to remove teacher "${name}"? This will revoke their access to the teacher portal and delete their profile.`)) {
+      setTeachers(prev => prev.filter(t => t.id !== id));
+      alert(`Teacher ${name} removed from academy records.`);
+    }
+  };
+
+  // --- Handlers: Receptionist Management ---
   const handleAddReceptionist = (e) => {
     e.preventDefault();
     const newRec = {
-      id: Date.now().toString(),
-      ...receptionForm,
-      lastActive: 'Just registered'
+      id: 'r_' + Date.now(),
+      ...receptionForm
     };
     setReceptionists(prev => [...prev, newRec]);
     alert(`Receptionist account created! Username: ${receptionForm.username}`);
-    setReceptionForm({ name: '', mobileNo: '', username: '', password: '', shift: 'Full Day' });
+    setReceptionForm({ name: '', mobileNo: '', username: '', password: '', shift: 'Full Day', monthlySalary: 22000 });
   };
 
+  const handleDeleteReceptionist = (id, name) => {
+    if (window.confirm(`Are you sure you want to delete receptionist account for "${name}"? They will no longer be able to log in to the reception desk.`)) {
+      setReceptionists(prev => prev.filter(r => r.id !== id));
+      alert(`Receptionist account for ${name} removed.`);
+    }
+  };
+
+  // --- Handlers: Fee Update Modal (With Concession) ---
   const handleSaveFeeUpdate = (e) => {
     e.preventDefault();
     setStudentFees(prev => prev.map(s => {
@@ -219,47 +269,63 @@ export default function AdminDashboard() {
         return {
           ...s,
           totalFee: Number(feeInputs.totalFee),
+          concession: Number(feeInputs.concession || 0),
           paidAmount: Number(feeInputs.paidAmount),
           dueDate: feeInputs.dueDate
         };
       }
       return s;
     }));
-    alert(`Fee records updated for ${feeUpdateModal.name}`);
+    alert(`Fee records and concession updated for ${feeUpdateModal.name}`);
     setFeeUpdateModal(null);
   };
 
+  // --- Handlers: Leave Actions ---
   const handleLeaveDecision = (id, newStatus) => {
     setLeaveRequests(prev => prev.map(l => l.id === id ? { ...l, status: newStatus } : l));
   };
 
-  const toggleSalaryStatus = (teacherId) => {
-    setTeachers(prev => prev.map(t => {
-      if (t.id === teacherId) {
-        const nextStatus = t.salaryStatus === 'Credited' ? 'Pending' : 'Credited';
-        return {
-          ...t,
-          salaryStatus: nextStatus,
-          salaryDate: nextStatus === 'Credited' ? 'Today' : 'Due next cycle'
-        };
-      }
-      return t;
-    }));
+  // --- Handlers: Month-wise Salary Status Toggle ---
+  const toggleMonthlySalaryStatus = (month, staffId) => {
+    setMonthlyPayroll(prev => {
+      const monthList = prev[month] || [];
+      const updatedList = monthList.map(item => {
+        if (item.id === staffId) {
+          const nextStatus = item.status === 'Credited' ? 'Pending' : 'Credited';
+          return {
+            ...item,
+            status: nextStatus,
+            paidDate: nextStatus === 'Credited' 
+              ? new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : 'Pending authorization'
+          };
+        }
+        return item;
+      });
+      return { ...prev, [month]: updatedList };
+    });
   };
 
-  const filteredTeachers = teachers.filter(t => 
-    t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    t.subject.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filtered Fee Calculations (Supports 11th & 12th split + Concession)
+  const filteredStudentFees = studentFees.filter(s => {
+    const matchesGrade = feeStandardFilter === 'All' || s.classGrade === feeStandardFilter;
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          s.rollNo.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesGrade && matchesSearch;
+  });
 
-  const filteredStudentFees = studentFees.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.rollNo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const totalGrossExpected = filteredStudentFees.reduce((acc, curr) => acc + curr.totalFee, 0);
+  const totalConcessions = filteredStudentFees.reduce((acc, curr) => acc + (curr.concession || 0), 0);
+  const totalNetExpected = totalGrossExpected - totalConcessions;
+  const totalCollected = filteredStudentFees.reduce((acc, curr) => acc + curr.paidAmount, 0);
+  const totalPending = totalNetExpected - totalCollected;
 
-  const totalExpected = studentFees.reduce((acc, curr) => acc + curr.totalFee, 0);
-  const totalCollected = studentFees.reduce((acc, curr) => acc + curr.paidAmount, 0);
-  const totalPending = totalExpected - totalCollected;
+  // Month-wise Payroll Filter
+  const currentMonthStaff = (monthlyPayroll[selectedSalaryMonth] || []).filter(item => {
+    const matchesRole = salaryRoleFilter === 'All' || item.role === salaryRoleFilter;
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesRole && matchesSearch;
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
@@ -301,15 +367,15 @@ export default function AdminDashboard() {
             { id: 'overview', label: 'Dashboard Overview', icon: Users },
             { id: 'teachers', label: 'Faculty Management', icon: UserPlus },
             { id: 'reception', label: 'Reception Accounts', icon: Key },
-            { id: 'fees', label: 'Student Fee Ledger', icon: CreditCard },
+            { id: 'fees', label: 'Student Fee Ledger (11th/12th)', icon: CreditCard },
             { id: 'leaves', label: 'Leave Approvals', icon: CalendarCheck, badge: leaveRequests.filter(l => l.status === 'Pending').length },
-            { id: 'salaries', label: 'Faculty Salary Payroll', icon: DollarSign },
+            { id: 'salaries', label: 'Monthly Staff Payroll', icon: DollarSign },
           ].map(tab => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); setSearchTerm(''); }}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer relative ${
                   activeTab === tab.id 
                     ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20' 
@@ -328,7 +394,9 @@ export default function AdminDashboard() {
           })}
         </div>
 
-        {/* TAB 1: OVERVIEW */}
+        {/* ========================================================= */}
+        {/* TAB 1: OVERVIEW                                           */}
+        {/* ========================================================= */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-emerald-600 to-emerald-800 text-white rounded-3xl p-8 shadow-sm">
@@ -337,65 +405,80 @@ export default function AdminDashboard() {
               </span>
               <h1 className="text-2xl sm:text-3xl font-black">Welcome, Director KP Sir!</h1>
               <p className="text-emerald-100 text-sm mt-2 max-w-2xl">
-                Master control panel for Shri Rajlaxmi Royal Academy of Science Vita. Configure teachers, provision reception staff access, supervise student fee collections, and approve faculty leaves.
+                Master management panel for Shri Rajlaxmi Royal Academy of Science Vita. Configure faculty profiles, provision front-desk staff, monitor 11th & 12th fee collections with concessions, and track 12-month payroll disbursements.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-6">
-              <div className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-sm">
-                <span className="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Total Projected Fees</span>
-                <span className="text-3xl font-black text-slate-900 mt-2 block">₹{totalExpected.toLocaleString()}</span>
-                <span className="text-[11px] text-slate-400 font-medium mt-1 block">Active 11th & 12th Enrollments</span>
+            <div className="grid sm:grid-cols-4 gap-4">
+              <div className="bg-white border border-emerald-100 rounded-2xl p-5 shadow-sm">
+                <span className="text-xs font-semibold text-slate-500 block uppercase tracking-wider">Gross Expected</span>
+                <span className="text-2xl font-black text-slate-900 mt-2 block">₹{totalGrossExpected.toLocaleString()}</span>
+                <span className="text-[11px] text-slate-400 font-medium mt-1 block">Full Tuition Value</span>
               </div>
-              <div className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-sm">
+              <div className="bg-white border border-emerald-100 rounded-2xl p-5 shadow-sm">
+                <span className="text-xs font-semibold text-blue-700 block uppercase tracking-wider">Fee Concessions</span>
+                <span className="text-2xl font-black text-blue-600 mt-2 block">₹{totalConcessions.toLocaleString()}</span>
+                <span className="text-[11px] text-blue-500 font-medium mt-1 block">Scholarship Disbursed</span>
+              </div>
+              <div className="bg-white border border-emerald-100 rounded-2xl p-5 shadow-sm">
                 <span className="text-xs font-semibold text-emerald-800 block uppercase tracking-wider">Collected Fees</span>
-                <span className="text-3xl font-black text-emerald-600 mt-2 block">₹{totalCollected.toLocaleString()}</span>
+                <span className="text-2xl font-black text-emerald-600 mt-2 block">₹{totalCollected.toLocaleString()}</span>
                 <span className="text-[11px] text-emerald-700 font-bold mt-1 block">
-                  {totalExpected > 0 ? Math.round((totalCollected/totalExpected)*100) : 0}% Collected
+                  {totalNetExpected > 0 ? Math.round((totalCollected/totalNetExpected)*100) : 0}% of Net Payable
                 </span>
               </div>
-              <div className="bg-white border border-emerald-100 rounded-2xl p-6 shadow-sm">
-                <span className="text-xs font-semibold text-amber-800 block uppercase tracking-wider">Total Outstanding Dues</span>
-                <span className="text-3xl font-black text-amber-600 mt-2 block">₹{totalPending.toLocaleString()}</span>
-                <span className="text-[11px] text-amber-700 font-medium mt-1 block">Pending Across Batches</span>
+              <div className="bg-white border border-emerald-100 rounded-2xl p-5 shadow-sm">
+                <span className="text-xs font-semibold text-amber-800 block uppercase tracking-wider">Outstanding Dues</span>
+                <span className="text-2xl font-black text-amber-600 mt-2 block">₹{totalPending.toLocaleString()}</span>
+                <span className="text-[11px] text-amber-700 font-medium mt-1 block">Net Balance Pending</span>
               </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-3">
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <UserPlus className="w-5 h-5 text-emerald-600" /> Faculty & Staff Status
+                  <UserPlus className="w-5 h-5 text-emerald-600" /> Faculty & Staff Roster
                 </h3>
                 <p className="text-xs text-slate-500">
-                  {teachers.length} department heads active. {leaveRequests.filter(l => l.status === 'Pending').length} leave application(s) awaiting your authorization.
+                  {teachers.length} faculty head(s) and {receptionists.length} receptionist(s) currently registered.
                 </p>
-                <button
-                  onClick={() => setActiveTab('leaves')}
-                  className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition cursor-pointer"
-                >
-                  Review Leave Requests &rarr;
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setActiveTab('teachers')}
+                    className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl transition cursor-pointer"
+                  >
+                    Manage Teachers &rarr;
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('reception')}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                  >
+                    Manage Reception &rarr;
+                  </button>
+                </div>
               </div>
 
               <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-3">
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <Key className="w-5 h-5 text-emerald-600" /> Reception Desk Accounts
+                  <DollarSign className="w-5 h-5 text-emerald-600" /> 12-Month Academic Payroll
                 </h3>
                 <p className="text-xs text-slate-500">
-                  {receptionists.length} front-desk accounts configured with admission & attendance logging rights.
+                  Track credited or pending salaries for both teachers and receptionists for all 12 months (June to May).
                 </p>
                 <button
-                  onClick={() => setActiveTab('reception')}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition cursor-pointer"
+                  onClick={() => setActiveTab('salaries')}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition cursor-pointer"
                 >
-                  Manage Reception Access &rarr;
+                  Open Month-wise Payroll &rarr;
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 2: FACULTY MANAGEMENT */}
+        {/* ========================================================= */}
+        {/* TAB 2: FACULTY MANAGEMENT (WITH DELETE OPTION)            */}
+        {/* ========================================================= */}
         {activeTab === 'teachers' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -407,14 +490,14 @@ export default function AdminDashboard() {
                   {editingTeacherId ? 'Update Faculty Details' : 'Onboard New Faculty Member'}
                 </h2>
                 <p className="text-slate-600 text-sm">
-                  Information entered here directly updates the teacher's profile and credentials.
+                  Add, edit, or remove teachers when they exit the academy.
                 </p>
               </div>
               {editingTeacherId && (
                 <button 
                   onClick={() => {
                     setEditingTeacherId(null);
-                    setTeacherForm({ name: '', subject: 'Physics', mobileNo: '', qualification: '', address: '', username: '', password: '', salary: 65000 });
+                    setTeacherForm({ name: '', subject: 'Physics', mobileNo: '', qualification: '', address: '', username: '', password: '', monthlySalary: 65000 });
                   }}
                   className="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-bold rounded-xl cursor-pointer"
                 >
@@ -478,13 +561,13 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-700 uppercase">Monthly Salary (INR) *</label>
+                  <label className="text-xs font-bold text-slate-700 uppercase">Monthly Remuneration (INR) *</label>
                   <input
                     type="number"
                     required
                     placeholder="75000"
-                    value={teacherForm.salary}
-                    onChange={e => setTeacherForm({ ...teacherForm, salary: Number(e.target.value) })}
+                    value={teacherForm.monthlySalary}
+                    onChange={e => setTeacherForm({ ...teacherForm, monthlySalary: Number(e.target.value) })}
                     className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-emerald-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -539,6 +622,7 @@ export default function AdminDashboard() {
               </div>
             </form>
 
+            {/* List of Teachers with Edit & Delete Options */}
             <div className="space-y-3 pt-4">
               <h3 className="text-sm font-bold text-slate-800">Current Academy Faculty ({teachers.length})</h3>
               <div className="space-y-3">
@@ -549,6 +633,9 @@ export default function AdminDashboard() {
                         <span className="font-bold text-slate-900 text-sm">{teacher.name}</span>
                         <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                           {teacher.subject} HOD
+                        </span>
+                        <span className="text-xs font-black text-emerald-700">
+                          ₹{teacher.monthlySalary.toLocaleString()} / mo
                         </span>
                       </div>
                       <p className="text-xs text-slate-500">{teacher.qualification}</p>
@@ -567,7 +654,16 @@ export default function AdminDashboard() {
                         onClick={() => handleEditTeacherClick(teacher)}
                         className="px-3.5 py-2 bg-white border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                       >
-                        <Edit3 className="w-3.5 h-3.5" /> Edit Info
+                        <Edit3 className="w-3.5 h-3.5" /> Edit
+                      </button>
+
+                      {/* TEACHER DELETE OPTION */}
+                      <button
+                        onClick={() => handleDeleteTeacher(teacher.id, teacher.name)}
+                        className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                        title="Remove teacher who exited the academy"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remove
                       </button>
                     </div>
                   </div>
@@ -577,20 +673,22 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 3: RECEPTIONIST ACCOUNTS */}
+        {/* ========================================================= */}
+        {/* TAB 3: RECEPTIONIST ACCOUNTS (WITH DELETE OPTION)         */}
+        {/* ========================================================= */}
         {activeTab === 'reception' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
                 Front-Desk Credential Control
               </span>
-              <h2 className="text-2xl font-bold text-slate-900 mt-2">Provision Receptionist Credentials</h2>
-              <p className="text-slate-600 text-sm">Issue and manage username and passwords for front-desk reception staff.</p>
+              <h2 className="text-2xl font-bold text-slate-900 mt-2">Provision & Manage Receptionist Accounts</h2>
+              <p className="text-slate-600 text-sm">Issue login credentials or remove receptionists who have exited the academy.</p>
             </div>
 
-            <form onSubmit={handleAddReceptionist} className="p-6 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+            <form onSubmit={handleAddReceptionist} className="p-6 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 uppercase">Staff Member Name</label>
+                <label className="text-xs font-bold text-slate-700 uppercase">Staff Name</label>
                 <input
                   type="text"
                   required
@@ -606,10 +704,22 @@ export default function AdminDashboard() {
                 <input
                   type="tel"
                   required
-                  placeholder="e.g. +91 98221 00000"
+                  placeholder="+91 98221 00000"
                   value={receptionForm.mobileNo}
                   onChange={e => setReceptionForm({ ...receptionForm, mobileNo: e.target.value })}
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 uppercase">Salary (INR)</label>
+                <input
+                  type="number"
+                  required
+                  placeholder="22000"
+                  value={receptionForm.monthlySalary}
+                  onChange={e => setReceptionForm({ ...receptionForm, monthlySalary: Number(e.target.value) })}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-emerald-800 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -618,7 +728,7 @@ export default function AdminDashboard() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. reception_desk2"
+                  placeholder="reception_desk"
                   value={receptionForm.username}
                   onChange={e => setReceptionForm({ ...receptionForm, username: e.target.value })}
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500"
@@ -637,7 +747,7 @@ export default function AdminDashboard() {
                 />
               </div>
 
-              <div className="sm:col-span-4 flex justify-end">
+              <div className="sm:col-span-5 flex justify-end pt-1">
                 <button
                   type="submit"
                   className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer flex items-center gap-1.5"
@@ -648,14 +758,16 @@ export default function AdminDashboard() {
             </form>
 
             <div className="space-y-3 pt-2">
-              <h3 className="text-sm font-bold text-slate-800">Authorized Reception Accounts</h3>
+              <h3 className="text-sm font-bold text-slate-800">Authorized Reception Accounts ({receptionists.length})</h3>
               <div className="space-y-3">
                 {receptionists.map(r => (
                   <div key={r.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <h4 className="font-bold text-slate-900 text-sm">{r.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-slate-900 text-sm">{r.name}</h4>
+                        <span className="text-xs font-bold text-emerald-700">₹{r.monthlySalary?.toLocaleString() || '22,000'} / mo</span>
+                      </div>
                       <p className="text-xs text-slate-500">{r.shift} • Contact: {r.mobileNo}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Last portal activity: {r.lastActive}</p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -678,6 +790,15 @@ export default function AdminDashboard() {
                       >
                         Reset Password
                       </button>
+
+                      {/* RECEPTIONIST DELETE OPTION */}
+                      <button
+                        onClick={() => handleDeleteReceptionist(r.id, r.name)}
+                        className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl transition cursor-pointer"
+                        title="Delete receptionist who left academy"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -686,87 +807,149 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 4: STUDENT FEE LEDGER */}
+        {/* ========================================================= */}
+        {/* TAB 4: STUDENT FEE LEDGER (11TH/12TH + FEE CONCESSION)     */}
+        {/* ========================================================= */}
         {activeTab === 'fees' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                  Financial Records
+                  Financial Records & Scholarships
                 </span>
                 <h2 className="text-2xl font-bold text-slate-900 mt-2">Student Fee Master Ledger</h2>
-                <p className="text-slate-600 text-sm">Directly adjust student total fees, record incoming payments, and set due dates.</p>
+                <p className="text-slate-600 text-sm">Select standard (11th / 12th) to inspect or modify tuition dues, apply scholarship concessions, and track payments.</p>
               </div>
 
-              <div className="relative max-w-xs">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Filter student or roll no..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500"
-                />
+              {/* Class Filter Tabs: 11th & 12th Separate Option */}
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl">
+                <span className="text-xs font-bold text-slate-500 px-2 flex items-center gap-1">
+                  <Filter className="w-3.5 h-3.5" /> Class:
+                </span>
+                {['All', '11th', '12th'].map(grade => (
+                  <button
+                    key={grade}
+                    onClick={() => setFeeStandardFilter(grade)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      feeStandardFilter === grade 
+                        ? 'bg-emerald-600 text-white shadow-xs' 
+                        : 'text-slate-600 hover:text-emerald-700'
+                    }`}
+                  >
+                    {grade === 'All' ? 'All Classes' : `${grade} Standard`}
+                  </button>
+                ))}
               </div>
             </div>
 
+            {/* Quick Stats for Selected Grade (Including Concession Total) */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <span className="text-xs text-slate-500 font-semibold block uppercase">Gross {feeStandardFilter} Fees</span>
+                <span className="text-2xl font-black text-slate-900 mt-1 block">₹{totalGrossExpected.toLocaleString()}</span>
+              </div>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl">
+                <span className="text-xs text-blue-800 font-semibold block uppercase">Scholarship Concessions</span>
+                <span className="text-2xl font-black text-blue-700 mt-1 block">₹{totalConcessions.toLocaleString()}</span>
+              </div>
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                <span className="text-xs text-emerald-800 font-semibold block uppercase">Collected Amount</span>
+                <span className="text-2xl font-black text-emerald-700 mt-1 block">₹{totalCollected.toLocaleString()}</span>
+              </div>
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                <span className="text-xs text-amber-800 font-semibold block uppercase">Outstanding Dues</span>
+                <span className="text-2xl font-black text-amber-700 mt-1 block">₹{totalPending.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative max-w-xs">
+              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search student or roll no..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Student Fee List */}
             <div className="space-y-3">
-              {filteredStudentFees.map(student => {
-                const pending = student.totalFee - student.paidAmount;
-                const status = pending === 0 ? 'Paid' : student.paidAmount > 0 ? 'Partial' : 'Pending';
+              {filteredStudentFees.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-sm">No student fee records found for {feeStandardFilter} standard.</div>
+              ) : (
+                filteredStudentFees.map(student => {
+                  const concession = student.concession || 0;
+                  const netPayable = student.totalFee - concession;
+                  const pending = netPayable - student.paidAmount;
+                  const status = pending <= 0 ? 'Paid' : student.paidAmount > 0 ? 'Partial' : 'Pending';
 
-                return (
-                  <div key={student.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-slate-900 text-sm">{student.name}</h4>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                          {student.classGrade}
-                        </span>
+                  return (
+                    <div key={student.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-slate-900 text-sm">{student.name}</h4>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            student.classGrade === '12th' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {student.classGrade} Standard
+                          </span>
+                          {concession > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 flex items-center gap-1">
+                              <Percent className="w-3 h-3" /> ₹{concession.toLocaleString()} Concession Applied
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500">Roll: {student.rollNo} • Parent: {student.parentName}</p>
+                        <p className="text-[11px] text-amber-700 font-semibold">Scheduled Deadline: {student.dueDate}</p>
                       </div>
-                      <p className="text-xs text-slate-500">Roll: {student.rollNo} • Parent: {student.parentName}</p>
-                      <p className="text-[11px] text-amber-700 font-semibold">Scheduled Deadline: {student.dueDate}</p>
+
+                      <div className="flex items-center gap-6">
+                        <div className="text-right text-xs space-y-0.5">
+                          <span className="text-slate-400 block">Gross Fee: ₹{student.totalFee.toLocaleString()}</span>
+                          {concession > 0 && (
+                            <span className="text-blue-600 font-semibold block">Net Payable: ₹{netPayable.toLocaleString()}</span>
+                          )}
+                          <span className="text-emerald-700 font-bold block">Paid: ₹{student.paidAmount.toLocaleString()}</span>
+                          <span className="text-sm font-black text-rose-600 block">Pending: ₹{pending.toLocaleString()}</span>
+                        </div>
+
+                        <div className="text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold block mb-2 ${
+                            status === 'Paid' ? 'bg-emerald-100 text-emerald-800' : status === 'Partial' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                          }`}>
+                            {status}
+                          </span>
+
+                          <button
+                            onClick={() => {
+                              setFeeUpdateModal(student);
+                              setFeeInputs({
+                                totalFee: student.totalFee,
+                                concession: student.concession || 0,
+                                paidAmount: student.paidAmount,
+                                dueDate: student.dueDate
+                              });
+                            }}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs"
+                          >
+                            Update Fee
+                          </button>
+                        </div>
+                      </div>
                     </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <span className="text-xs text-slate-400 block">Total: ₹{student.totalFee.toLocaleString()}</span>
-                        <span className="text-xs text-emerald-700 font-bold block">Paid: ₹{student.paidAmount.toLocaleString()}</span>
-                        <span className="text-sm font-black text-rose-600 block">Pending: ₹{pending.toLocaleString()}</span>
-                      </div>
-
-                      <div className="text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold block mb-2 ${
-                          status === 'Paid' ? 'bg-emerald-100 text-emerald-800' : status === 'Partial' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                        }`}>
-                          {status}
-                        </span>
-
-                        <button
-                          onClick={() => {
-                            setFeeUpdateModal(student);
-                            setFeeInputs({
-                              totalFee: student.totalFee,
-                              paidAmount: student.paidAmount,
-                              dueDate: student.dueDate
-                            });
-                          }}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs"
-                        >
-                          Update Fee
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
 
+            {/* Fee Edit Modal (Includes Fee Concession) */}
             {feeUpdateModal && (
               <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
                 <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 border border-emerald-100">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-slate-900">Update Fee for {feeUpdateModal.name}</h3>
+                    <h3 className="text-lg font-bold text-slate-900">Update {feeUpdateModal.classGrade} Fee: {feeUpdateModal.name}</h3>
                     <button onClick={() => setFeeUpdateModal(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                       <XCircle className="w-5 h-5" />
                     </button>
@@ -774,7 +957,7 @@ export default function AdminDashboard() {
 
                   <form onSubmit={handleSaveFeeUpdate} className="space-y-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 uppercase">Total Agreed Course Fee</label>
+                      <label className="text-xs font-bold text-slate-700 uppercase">Total Agreed Course Fee (₹)</label>
                       <input
                         type="number"
                         required
@@ -784,8 +967,25 @@ export default function AdminDashboard() {
                       />
                     </div>
 
+                    {/* FEE CONCESSION / SCHOLARSHIP FIELD */}
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700 uppercase">Total Amount Paid So Far</label>
+                      <label className="text-xs font-bold text-blue-700 uppercase flex items-center gap-1">
+                        <Percent className="w-3.5 h-3.5" /> Fee Concession / Scholarship Discount (₹)
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={feeInputs.concession}
+                        onChange={e => setFeeInputs({ ...feeInputs, concession: e.target.value })}
+                        className="w-full px-3 py-2 border border-blue-200 rounded-xl text-sm font-bold text-blue-700 bg-blue-50/50"
+                      />
+                      <span className="text-[10px] text-slate-400 block">
+                        Net payable fee will be: ₹{(Number(feeInputs.totalFee || 0) - Number(feeInputs.concession || 0)).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-slate-700 uppercase">Total Amount Paid So Far (₹)</label>
                       <input
                         type="number"
                         required
@@ -828,7 +1028,9 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 5: TEACHERS LEAVE APPROVAL */}
+        {/* ========================================================= */}
+        {/* TAB 5: TEACHERS LEAVE APPROVAL                            */}
+        {/* ========================================================= */}
         {activeTab === 'leaves' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div>
@@ -885,69 +1087,116 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 6: FACULTY SALARY TRACKER */}
+        {/* ========================================================= */}
+        {/* TAB 6: 12-MONTH SALARY LEDGER (TEACHERS & RECEPTIONISTS)   */}
+        {/* ========================================================= */}
         {activeTab === 'salaries' && (
           <div className="bg-white p-8 rounded-3xl border border-emerald-100 shadow-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                  Payroll Management
+                  Payroll Management (Academic Year 2026–27)
                 </span>
-                <h2 className="text-2xl font-bold text-slate-900 mt-2">Faculty Monthly Salary & Compensation</h2>
-                <p className="text-slate-600 text-sm">Monitor monthly remuneration for each subject head and toggle bank credit status.</p>
+                <h2 className="text-2xl font-bold text-slate-900 mt-2">Month-wise Staff Salary & Remuneration</h2>
+                <p className="text-slate-600 text-sm">Select any month from the 12-month academic calendar to update teacher and receptionist payment status.</p>
               </div>
 
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-right">
-                <span className="text-xs text-slate-500 uppercase font-bold block">Total Monthly Payroll</span>
-                <span className="text-2xl font-black text-emerald-800">
-                  ₹{teachers.reduce((acc, t) => acc + t.salary, 0).toLocaleString()}
-                </span>
+              {/* All 12 Academic Months Selector Dropdown */}
+              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl">
+                <span className="text-xs font-bold text-emerald-900 uppercase">Payroll Month:</span>
+                <select
+                  value={selectedSalaryMonth}
+                  onChange={e => setSelectedSalaryMonth(e.target.value)}
+                  className="bg-transparent font-bold text-emerald-800 text-xs focus:outline-none cursor-pointer"
+                >
+                  {academicMonths.map(month => (
+                    <option key={month} value={month} className="bg-white text-slate-900">
+                      {month}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <div className="space-y-3">
-              {teachers.map(teacher => (
-                <div key={teacher.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-slate-900 text-sm">{teacher.name}</h4>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                        {teacher.subject}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-500">Contact: {teacher.mobileNo} • Acc: {teacher.username}</p>
-                    <p className="text-[11px] text-slate-400">Date recorded: {teacher.salaryDate}</p>
-                  </div>
-
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <span className="text-xs text-slate-400 block">Monthly Compensation</span>
-                      <span className="text-lg font-black text-slate-900">₹{teacher.salary.toLocaleString()}</span>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className={`px-3 py-1 text-xs font-black rounded-full ${
-                        teacher.salaryStatus === 'Credited' 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {teacher.salaryStatus}
-                      </span>
-
-                      <button
-                        onClick={() => toggleSalaryStatus(teacher.id)}
-                        className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs ${
-                          teacher.salaryStatus === 'Credited'
-                            ? 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                        }`}
-                      >
-                        {teacher.salaryStatus === 'Credited' ? 'Mark Pending' : 'Mark Credited'}
-                      </button>
-                    </div>
-                  </div>
+            {/* Filter by Role + Search */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-500">Filter Staff:</span>
+                <div className="flex bg-white rounded-xl border border-slate-200 p-1">
+                  {['All', 'Teacher', 'Receptionist'].map(role => (
+                    <button
+                      key={role}
+                      onClick={() => setSalaryRoleFilter(role)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        salaryRoleFilter === role 
+                          ? 'bg-emerald-600 text-white shadow-xs' 
+                          : 'text-slate-600 hover:text-emerald-700'
+                      }`}
+                    >
+                      {role === 'All' ? 'All Staff' : `${role}s Only`}
+                    </button>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div className="text-xs text-slate-500 font-semibold">
+                Month Total: <strong className="text-emerald-700 text-sm">
+                  ₹{currentMonthStaff.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString()}
+                </strong>
+              </div>
+            </div>
+
+            {/* Staff Month-wise Payroll Table */}
+            <div className="space-y-3">
+              {currentMonthStaff.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-sm">No payroll records for this month filter.</div>
+              ) : (
+                currentMonthStaff.map(staff => (
+                  <div key={staff.id} className="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-slate-900 text-sm">{staff.name}</h4>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                          staff.role === 'Teacher' ? 'bg-emerald-100 text-emerald-800' : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {staff.role} • {staff.designation}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Payment Cycle: {selectedSalaryMonth} • Status Info: {staff.paidDate}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <span className="text-xs text-slate-400 block">Monthly Amount</span>
+                        <span className="text-lg font-black text-slate-900">₹{staff.amount.toLocaleString()}</span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 text-xs font-black rounded-full ${
+                          staff.status === 'Credited' 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {staff.status}
+                        </span>
+
+                        <button
+                          onClick={() => toggleMonthlySalaryStatus(selectedSalaryMonth, staff.id)}
+                          className={`px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 shadow-xs ${
+                            staff.status === 'Credited'
+                              ? 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          }`}
+                        >
+                          {staff.status === 'Credited' ? 'Mark Pending' : 'Mark Credited'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
