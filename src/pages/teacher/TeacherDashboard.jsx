@@ -7,6 +7,8 @@ import {
   Phone, MapPin, Award, Camera, CalendarCheck, 
   DollarSign, FileText, CheckCircle2, AlertCircle, XCircle
 } from 'lucide-react';
+import ThemeToggle from '../../components/ThemeToggle';
+
 
 export default function TeacherDashboard({ 
   fixedSubject = 'Physics', 
@@ -289,25 +291,26 @@ export default function TeacherDashboard({
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex flex-col transition-colors duration-300">
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-emerald-100 px-6 lg:px-16 py-3.5 flex items-center justify-between shadow-sm">
+      <nav className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md border-b border-emerald-100 dark:border-slate-800 px-6 lg:px-16 py-3.5 flex items-center justify-between shadow-sm dark:shadow-slate-950/40 transition-colors">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-emerald-600 rounded-xl text-white shadow-md shadow-emerald-500/20">
             <GraduationCap className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-xl font-extrabold tracking-tight text-slate-900 block leading-none">
-              SRR <span className="text-emerald-600">{fixedSubject.toUpperCase()} PORTAL</span>
+            <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white block leading-none">
+              SRR <span className="text-emerald-600 dark:text-emerald-400">{fixedSubject.toUpperCase()} PORTAL</span>
             </span>
-            <span className="text-[10px] tracking-widest uppercase font-semibold text-slate-500">
+            <span className="text-[10px] tracking-widest uppercase font-semibold text-slate-500 dark:text-slate-400">
               Department of {fixedSubject}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 pl-1.5 pr-3 py-1 rounded-full text-xs font-bold text-emerald-800">
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <div className="hidden sm:flex items-center gap-2.5 bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800/60 pl-1.5 pr-3 py-1 rounded-full text-xs font-bold text-emerald-800 dark:text-emerald-300">
             <img 
               src={teacherProfile.photoUrl} 
               alt={teacherProfile.name}
@@ -317,7 +320,7 @@ export default function TeacherDashboard({
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" /> Logout
           </button>
