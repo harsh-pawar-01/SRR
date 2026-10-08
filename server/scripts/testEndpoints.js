@@ -5,9 +5,53 @@
  * Usage: node scripts/testEndpoints.js
  */
 
+const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+const testEnvPath = path.resolve(__dirname, '../.env.test');
+const prodEnvPath = path.resolve(__dirname, '../.env');
+
+// Strict safety check: server/.env.test must exist
+if (!fs.existsSync(testEnvPath)) {
+    console.error('\n================================================================');
+    console.error('FATAL: server/.env.test file is missing!');
+    console.error('The automated test suite (npm test) must never run against the production database.');
+    console.error('To run tests:');
+    console.error('  1. Copy server/.env.test.example to server/.env.test');
+    console.error('  2. Configure a distinct test Supabase project (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)');
+    console.error('  3. Run migrations 001 and 002 on the test database');
+    console.error('  4. Run "npm run seed:admin:test" to seed the test administrator');
+    console.error('================================================================\n');
+    process.exit(1);
+}
+
+const testEnv = dotenv.parse(fs.readFileSync(testEnvPath));
+let prodEnv = {};
+if (fs.existsSync(prodEnvPath)) {
+    prodEnv = dotenv.parse(fs.readFileSync(prodEnvPath));
+}
+
+if (!testEnv.SUPABASE_URL || !testEnv.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('FATAL: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured in server/.env.test');
+    process.exit(1);
+}
+
+// Strict safety check: test project URL must not match production project URL
+if (prodEnv.SUPABASE_URL && testEnv.SUPABASE_URL.trim() === prodEnv.SUPABASE_URL.trim()) {
+    console.error('\n================================================================');
+    console.error('FATAL SAFETY VIOLATION: SUPABASE_URL in server/.env.test matches server/.env (production)!');
+    console.error('Automated tests are strictly forbidden from executing against the production database.');
+    console.error('Please configure a distinct test project in server/.env.test.');
+    console.error('================================================================\n');
+    process.exit(1);
+}
+
+// Inject test environment variables before loading server or supabase client
+process.env.NODE_ENV = 'test';
+for (const [key, val] of Object.entries(testEnv)) {
+    process.env[key] = val;
+}
 
 const http = require('http');
 const supabase = require('../config/supabase');

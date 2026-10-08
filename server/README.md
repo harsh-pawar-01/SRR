@@ -71,26 +71,43 @@ This runs `scripts/seedAdmin.js`, which securely hashes `ADMIN_PASSWORD` with bc
 
 ---
 
-## 5. Test Suite
+## 5. Test Suite & Dedicated Test Database Setup
 
-Execute the automated test runner:
+> [!IMPORTANT]
+> The automated test suite (`npm test`) is **strictly forbidden from running against the production database**. The test runner performs safety checks and will immediately abort if `server/.env.test` is missing or if its `SUPABASE_URL` matches `server/.env`.
 
-```bash
-npm test
-```
+### Step-by-Step: Setting Up a Dedicated Test Database
 
-This executes `scripts/testEndpoints.js`:
-- Starts an in-memory HTTP instance of the Express server.
-- Executes 17 end-to-end integration tests against live endpoints:
-  - Health checks & error boundary responses.
-  - Authentication workflows & token issuance.
-  - Teacher subject isolation boundaries (Physics teacher cannot mutate Chemistry).
-  - Student profile and marks ownership checks.
-  - Daily attendance marking and retrieval.
-  - Batch promotion from 11th standard to 12th standard.
-  - Public consultation inquiry submissions.
-  - Atomic fee payment workflows, balance validation, and overpayment rejections.
-- **Automated Cleanup**: Uses `test_` prefixed identifiers and purges all test data from the live database upon test completion.
+1. **Create a Second Free Supabase Project**:
+   - Go to [Supabase Dashboard](https://supabase.com/dashboard) and click **New Project** (e.g., `srr-portal-test`).
+   - Choose a strong database password and select your preferred region.
+
+2. **Execute Database Migrations on the Test Project**:
+   - Open the **SQL Editor** in your test project's Supabase dashboard.
+   - Run `server/db/migrations/001_init.sql` to initialize tables, relations, indexes, and RLS.
+   - Run `server/db/migrations/002_hardening.sql` to apply function permissions and revoke public table access.
+
+3. **Configure `server/.env.test`**:
+   - Copy the test template:
+     ```bash
+     cp .env.test.example .env.test
+     ```
+   - In `server/.env.test`, populate `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` with your test project's API credentials (found under Project Settings -> API).
+   - Set `JWT_SECRET`, `ADMIN_USERNAME`, and `ADMIN_PASSWORD` for the test environment.
+
+4. **Seed the Test Administrator Account**:
+   ```bash
+   npm run seed:admin:test
+   ```
+   This seeds the administrator account into your dedicated test Supabase project.
+
+5. **Run the Automated Integration Tests**:
+   ```bash
+   npm test
+   ```
+   - Starts an isolated in-memory Express server.
+   - Runs 17 end-to-end integration tests (auth, RBAC, subject boundaries, student permissions, fee idempotency).
+   - Automatically cleans up and purges all `test_` prefixed records created during the run.
 
 ---
 

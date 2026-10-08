@@ -8,7 +8,8 @@ const dotenv = require('dotenv');
 const path = require('path');
 
 // Load environment variables before requiring database or services
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+const envFileName = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+dotenv.config({ path: path.resolve(__dirname, envFileName) });
 
 // Critical Startup Validation
 if (!process.env.JWT_SECRET) {
