@@ -302,7 +302,6 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login?role=admin');
   };
 
   // --- Handlers: Teacher Management ---

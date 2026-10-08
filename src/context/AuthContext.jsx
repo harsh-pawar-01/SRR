@@ -4,12 +4,14 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+    const navigate = useNavigate();
+    const location = useLocation();
     const [user, setUser] = useState(() => {
         try {
             const cached = localStorage.getItem('srr_user');
@@ -20,6 +22,14 @@ export function AuthProvider({ children }) {
     });
     const [token, setToken] = useState(() => localStorage.getItem('srr_token'));
     const [loading, setLoading] = useState(true);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    // Reset logout flag once navigation to home has settled
+    useEffect(() => {
+        if (isLoggingOut && location.pathname === '/') {
+            setIsLoggingOut(false);
+        }
+    }, [location.pathname, isLoggingOut]);
 
     // Verify session on mount
     useEffect(() => {
@@ -83,14 +93,16 @@ export function AuthProvider({ children }) {
     };
 
     const logout = () => {
+        setIsLoggingOut(true);
         localStorage.removeItem('srr_token');
         localStorage.removeItem('srr_user');
         setUser(null);
         setToken(null);
+        navigate('/', { replace: true });
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, isLoggingOut, login, logout }}>
             {children}
         </AuthContext.Provider>
     );
@@ -108,8 +120,13 @@ export function useAuth() {
  * ProtectedRoute component with Role-based access control.
  */
 export function ProtectedRoute({ children, allowedRoles = [] }) {
-    const { user, loading } = useAuth();
+    const { user, loading, isLoggingOut } = useAuth();
     const location = useLocation();
+
+    // If an intentional logout is in progress, do not redirect to /login
+    if (isLoggingOut) {
+        return null;
+    }
 
     if (loading) {
         return (

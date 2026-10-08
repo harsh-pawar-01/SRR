@@ -272,7 +272,6 @@ export default function TeacherDashboard({
 
   const handleLogout = () => {
     logout();
-    navigate('/login?role=teacher');
   };
 
   const handlePhotoUpload = (e) => {

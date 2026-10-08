@@ -35,7 +35,6 @@ export default function StudentDashboard() {
   // Handle Logout
   const handleLogout = () => {
     logout();
-    navigate('/login?type=student');
   };
 
   // Fetch all student dashboard data

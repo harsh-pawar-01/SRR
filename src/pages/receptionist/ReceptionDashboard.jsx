@@ -67,7 +67,6 @@ export default function ReceptionDashboard() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login?role=receptionist');
   };
 
   // Fetch all initial data
