@@ -16,6 +16,7 @@ const supabase = require('../config/supabase');
 async function seedAdmin() {
     const username = process.env.ADMIN_USERNAME;
     const password = process.env.ADMIN_PASSWORD;
+    const phone = process.env.ADMIN_PHONE || '9999999999';
 
     if (!username || !password) {
         console.error('Error: ADMIN_USERNAME and ADMIN_PASSWORD must be defined in .env');
@@ -59,7 +60,7 @@ async function seedAdmin() {
                 password_hash: passwordHash,
                 name: 'System Administrator',
                 role: 'admin',
-                phone: '0000000000',
+                phone: phone.trim(),
                 email: 'admin@srracademy.com',
                 is_active: true
             })
