@@ -8,8 +8,12 @@ const Razorpay = require('razorpay');
 const { z } = require('zod');
 const supabase = require('../config/supabase');
 
-// Initialize Razorpay client lazily from environment variables
+// Initialize Razorpay client lazily from environment variables (or test mock)
+exports._razorpayInstance = null;
 const getRazorpayInstance = () => {
+    if (exports._razorpayInstance) {
+        return exports._razorpayInstance;
+    }
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
         return null;
     }
@@ -314,7 +318,13 @@ exports.verifyRazorpayPayment = async (req, res, next) => {
             .update(body)
             .digest('hex');
 
-        if (expectedSignature !== razorpay_signature) {
+        const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+        const receivedBuffer = Buffer.from(razorpay_signature, 'utf8');
+
+        if (
+            expectedBuffer.length !== receivedBuffer.length ||
+            !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+        ) {
             return res.status(400).json({
                 success: false,
                 message: 'Payment verification failed: Invalid cryptographic signature',
@@ -344,6 +354,27 @@ exports.verifyRazorpayPayment = async (req, res, next) => {
             });
         }
 
+        // Step 3: Fast-path idempotency check: if Razorpay payment was already recorded, return existing state
+        const { data: existingPayment } = await supabase
+            .from('fee_payments')
+            .select('id, fee_id, amount')
+            .eq('razorpay_payment_id', razorpay_payment_id)
+            .maybeSingle();
+
+        if (existingPayment) {
+            const { data: latestFee } = await supabase
+                .from('fees')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            return res.status(200).json({
+                success: true,
+                message: 'Payment already processed (idempotent)',
+                data: latestFee || fee,
+            });
+        }
+
         const remainingBalance = Number(fee.total_amount) - Number(fee.paid_amount);
         if (verifiedAmountInRupees > remainingBalance) {
             return res.status(400).json({
@@ -352,7 +383,7 @@ exports.verifyRazorpayPayment = async (req, res, next) => {
             });
         }
 
-        // Step 3: Atomic database update with idempotency & balance check
+        // Step 4: Atomic database update with idempotency & balance check
         const { data, error } = await supabase.rpc('record_fee_payment', {
             p_fee_id: id,
             p_amount: verifiedAmountInRupees,
