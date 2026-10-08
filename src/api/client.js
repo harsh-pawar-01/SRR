@@ -3,7 +3,8 @@
  * Centralized API client for SRR Academy Portal.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || '';
+const rawApiUrl = import.meta.env.VITE_API_URL || '';
+const BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 export async function apiRequest(endpoint, options = {}) {
     const token = localStorage.getItem('srr_token');

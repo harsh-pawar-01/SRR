@@ -12,14 +12,16 @@ const envFileName = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
 dotenv.config({ path: path.resolve(__dirname, envFileName) });
 
 // Critical Startup Validation
-if (!process.env.JWT_SECRET) {
-    console.error('FATAL: JWT_SECRET environment variable is required.');
-    process.exit(1);
+const requiredEnvVars = ['JWT_SECRET', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+if (process.env.NODE_ENV === 'production') {
+    requiredEnvVars.push('FRONTEND_URL');
 }
 
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('FATAL: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.');
-    process.exit(1);
+for (const envKey of requiredEnvVars) {
+    if (!process.env[envKey]) {
+        console.error(`FATAL: ${envKey} environment variable is required.`);
+        process.exit(1);
+    }
 }
 
 const helmet = require('helmet');
@@ -56,11 +58,13 @@ const app = express();
 // Security Middlewares
 app.use(helmet());
 
-const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const frontendUrl = process.env.FRONTEND_URL;
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, server-to-server) or matching frontend
-        if (!origin || origin === frontendUrl || origin === 'http://localhost:5173') {
+        // Allow requests with no origin (like mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (frontendUrl && origin === frontendUrl) return callback(null, true);
+        if (process.env.NODE_ENV !== 'production' && origin === 'http://localhost:5173') {
             return callback(null, true);
         }
         return callback(new Error(`CORS blocked request from origin: ${origin}`));
@@ -94,11 +98,18 @@ const consultationLimiter = rateLimit({
     },
 });
 
-// Health check endpoint
+// Health check endpoints (no sensitive data exposed)
 app.get('/', (req, res) => {
     res.json({
         success: true,
         message: 'SRR / Royal Academy of Science API is running',
+        timestamp: new Date().toISOString(),
+    });
+});
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
         timestamp: new Date().toISOString(),
     });
 });
