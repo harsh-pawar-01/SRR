@@ -3,10 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { GraduationCap, ArrowLeft, Calendar, User, Mail, Phone, MapPin, BookOpen, AlertCircle } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
 
+import { api } from '../../api/client';
+
 export default function Admissions() {
   const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [submitError, setSubmitError] = useState('');
   const [formData, setFormData] = useState({
     studentName: '',
     parentName: '',
@@ -33,13 +37,26 @@ export default function Admissions() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.contactNumber.length !== 10 || !/^[6-9]\d{9}$/.test(formData.contactNumber)) {
       setPhoneError('Please enter a valid 10-digit mobile number.');
       return;
     }
-    setSubmitted(true);
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await api.post('/api/consultations', formData);
+      if (res.success) {
+        setSubmitted(true);
+      } else {
+        throw new Error(res.message || 'Consultation request submission failed');
+      }
+    } catch (err) {
+      setSubmitError(err.message || 'Failed to submit consultation. Please check your inputs.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Automatically redirect to home page after 10 seconds when success screen is shown
@@ -248,17 +265,24 @@ export default function Admissions() {
                 ></textarea>
               </div>
 
+              {submitError && (
+                <div className="p-4 bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-center gap-2 text-rose-800 dark:text-rose-200 text-sm">
+                  <AlertCircle className="w-5 h-5 shrink-0 text-rose-600" />
+                  <span>{submitError}</span>
+                </div>
+              )}
+
               <div className="pt-4 flex justify-end">
                 <button
                   type="submit"
-                  disabled={Boolean(phoneError) || formData.contactNumber.length !== 10}
+                  disabled={Boolean(phoneError) || formData.contactNumber.length !== 10 || submitting}
                   className={`px-8 py-4 text-white font-semibold rounded-2xl transition shadow-lg flex items-center gap-2 w-full sm:w-auto justify-center ${
-                    phoneError || formData.contactNumber.length !== 10
+                    phoneError || formData.contactNumber.length !== 10 || submitting
                       ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed shadow-none'
                       : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/25 cursor-pointer'
                   }`}
                 >
-                  Submit Consultation Request &rarr;
+                  {submitting ? 'Submitting Request...' : 'Submit Consultation Request →'}
                 </button>
               </div>
             </form>
