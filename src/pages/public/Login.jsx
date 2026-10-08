@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { GraduationCap, ArrowLeft, Lock, User, Briefcase, UserCheck, ShieldCheck } from 'lucide-react';
+import { GraduationCap, ArrowLeft, Lock, User, Briefcase, UserCheck, AlertCircle, Loader2 } from 'lucide-react';
 import ThemeToggle from '../../components/ThemeToggle';
-
+import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { login } = useAuth();
   
   // Reads exact role from URL: ?role=teacher, ?role=receptionist, ?role=admin, or defaults to 'student'
   const roleFromUrl = searchParams.get('role') || (searchParams.get('type') === 'student' ? 'student' : 'student');
@@ -14,6 +15,8 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState(roleFromUrl);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (roleFromUrl) {
@@ -21,26 +24,31 @@ export default function Login() {
     }
   }, [roleFromUrl]);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+    setSubmitting(true);
 
-    if (selectedRole === 'student') {
-      navigate('/student');
-    } else if (selectedRole === 'teacher') {
-      const lowerUser = username.toLowerCase();
-      if (lowerUser.includes('chem')) {
-        navigate('/teacher/chemistry');
-      } else if (lowerUser.includes('math')) {
-        navigate('/teacher/mathematics');
-      } else if (lowerUser.includes('bio')) {
-        navigate('/teacher/biology');
+    try {
+      const user = await login(username, password);
+
+      // Route by real user role returned from API
+      if (user.role === 'student') {
+        navigate('/student');
+      } else if (user.role === 'teacher') {
+        const subject = user.subject ? user.subject.toLowerCase() : 'physics';
+        navigate(`/teacher/${subject}`);
+      } else if (user.role === 'reception') {
+        navigate('/receptionist');
+      } else if (user.role === 'admin') {
+        navigate('/admin');
       } else {
-        navigate('/teacher/physics');
+        navigate('/');
       }
-    } else if (selectedRole === 'receptionist') {
-      navigate('/receptionist');
-    } else if (selectedRole === 'admin') {
-      navigate('/admin');
+    } catch (err) {
+      setError(err.message || 'Invalid username or password. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -72,7 +80,7 @@ export default function Login() {
           badge: 'Master Administration',
           title: 'Admin Sign In',
           subtitle: 'Director & administrative management access only',
-          placeholder: 'e.g. admin_director or kp_sir',
+          placeholder: 'e.g. admin',
           label: 'Admin Username',
           icon: Lock,
           buttonText: 'Sign In to Admin Portal →'
@@ -138,7 +146,14 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Direct Login Form without duplicate tab selectors */}
+          {error && (
+            <div className="p-3.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Direct Login Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase text-slate-700 dark:text-slate-300 flex items-center gap-1">
@@ -148,10 +163,11 @@ export default function Login() {
               <input
                 type="text"
                 required
+                disabled={submitting}
                 placeholder={meta.placeholder}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition disabled:opacity-50"
               />
             </div>
 
@@ -162,18 +178,26 @@ export default function Login() {
               <input
                 type="password"
                 required
+                disabled={submitting}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition"
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition disabled:opacity-50"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition shadow-lg shadow-emerald-600/20 text-sm cursor-pointer mt-2 flex items-center justify-center gap-2"
+              disabled={submitting}
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-semibold rounded-2xl transition shadow-lg shadow-emerald-600/20 text-sm cursor-pointer mt-2 flex items-center justify-center gap-2"
             >
-              {meta.buttonText}
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Signing in...
+                </>
+              ) : (
+                meta.buttonText
+              )}
             </button>
           </form>
         </div>
