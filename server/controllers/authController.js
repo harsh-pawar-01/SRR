@@ -1,85 +1,116 @@
-const User = require('../models/User');
+/**
+ * authController.js
+ * Supabase-backed authentication handling login and session identity.
+ */
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { z } = require('zod');
+const supabase = require('../config/supabase');
 
-// Generate JWT Token helper
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
-        expiresIn: '30d'
+// Generate 7-day JWT token
+const generateToken = (id, role) => {
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is missing from environment variables');
+    }
+    return jwt.sign({ id, role }, process.env.JWT_SECRET, {
+        expiresIn: '7d',
     });
 };
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public (or restricted via admin later)
-exports.registerUser = async (req, res) => {
+// Zod schema for login
+exports.loginSchema = z.object({
+    body: z.object({
+        username: z.string().min(1, 'Username is required').trim(),
+        password: z.string().min(1, 'Password is required'),
+    }),
+});
+
+/**
+ * @desc    Authenticate user & return 7-day JWT
+ * @route   POST /api/auth/login
+ * @access  Public (Rate-limited)
+ */
+exports.loginUser = async (req, res, next) => {
     try {
-        const { name, email, password, role, phone } = req.body;
+        const { username, password } = req.body;
 
-        // Check if user already exists
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ success: false, message: 'User already exists' });
-        }
+        // Query user with password_hash
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('id, username, password_hash, name, role, subject, phone, email, is_active')
+            .eq('username', username.trim())
+            .maybeSingle();
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Create user
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            role: role || 'student',
-            phone
-        });
-
-        if (user) {
-            res.status(201).json({
-                success: true,
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                token: generateToken(user._id)
+        // Use the exact same generic error for wrong username, missing user, or inactive account
+        if (error || !user || !user.is_active) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid username or password',
             });
-        } else {
-            res.status(400).json({ success: false, message: 'Invalid user data' });
         }
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+
+        // Compare password hash
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid username or password',
+            });
+        }
+
+        // Generate JWT token
+        const token = generateToken(user.id, user.role);
+
+        // If user is a student, attach their student record details
+        let studentDetails = null;
+        if (user.role === 'student') {
+            const { data: studentRecord } = await supabase
+                .from('students')
+                .select('id, class_grade, admission_date')
+                .eq('user_id', user.id)
+                .maybeSingle();
+            studentDetails = studentRecord;
+        }
+
+        // Sanitize output (never leak password_hash)
+        const safeUser = {
+            id: user.id,
+            username: user.username,
+            name: user.name,
+            role: user.role,
+            subject: user.subject,
+            phone: user.phone,
+            email: user.email,
+            studentId: studentDetails?.id || null,
+            classGrade: studentDetails?.class_grade || null,
+        };
+
+        return res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            data: {
+                token,
+                user: safeUser,
+            },
+        });
+    } catch (err) {
+        next(err);
     }
 };
 
-// @desc    Authenticate user & get token
-// @route   POST /api/auth/login
-// @access  Public
-exports.loginUser = async (req, res) => {
+/**
+ * @desc    Get currently logged-in user profile
+ * @route   GET /api/auth/me
+ * @access  Private (Authenticated)
+ */
+exports.getMe = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
-
-        // Check for user email and include password field
-        const user = await User.findOne({ email }).select('+password');
-        if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid email or password' });
-        }
-
-        // Check password match
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid email or password' });
-        }
-
-        res.json({
+        return res.status(200).json({
             success: true,
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            token: generateToken(user._id)
+            data: req.user,
         });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+    } catch (err) {
+        next(err);
     }
 };
